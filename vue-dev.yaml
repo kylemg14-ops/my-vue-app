@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vue-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vue-dev
+  template:
+    metadata:
+      labels:
+        app: vue-dev
+    spec:
+      containers:
+        - name: vue-dev
+          image: node:18-bullseye-slim  # 較完整 Node image，Alpine 有時缺依賴
+          workingDir: /app
+          command: ["npm", "run", "serve"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: vue-src
+              mountPath: /app
+      volumes:
+        - name: vue-src
+          hostPath:
+            # Windows 對應路徑，C:\Users\ioio5\my-vue-app → /c/Users/ioio5/my-vue-app
+            path: /c/Users/ioio5/my-vue-app
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vue-dev-service
+spec:
+  type: NodePort
+  selector:
+    app: vue-dev
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30081
