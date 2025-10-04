@@ -7,53 +7,25 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      packages: write
-      id-token: write  # 如果需要，for GHCR auth
+    runs-on: self-hosted  
 
     steps:
-      # 1️⃣ 取代代碼
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # 2️⃣ 設定 Node.js 環境
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+    - name: Set KUBECONFIG
+      run: setx KUBECONFIG "C:\Users\ioio5\.kube\config"
 
-      # 3️⃣ 安裝依賴並 build Vue
-      - name: Install dependencies
-        run: npm ci
-      - name: Build Vue app
-        run: npm run build
+    - name: Build Vue
+      run: |
+        npm ci
+        npm run build
 
-      # 4️⃣ 登入 GitHub Container Registry
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build Docker image
+      run: docker build -t ghcr.io/kylemg14-ops/my-vue-app:latest .
 
-      # 5️⃣ Build Docker image
-      - name: Build Docker image
-        run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/my-vue-app:latest .
+    - name: Push Docker image
+      run: docker push ghcr.io/kylemg14-ops/my-vue-app:latest
 
-      # 6️⃣ Push Docker image 到 GHCR
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/my-vue-app:latest
-
-      # 7️⃣ 部署到 K3S (本地機器) - 需 kubeconfig
-      - name: Set up Kubeconfig
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.30.0'
-      - name: Deploy to K3S
-        run: |
-          kubectl apply -f deployment.yaml
+    - name: Deploy to K3S
+      run: kubectl apply -f deployment.yaml
