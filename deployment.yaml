@@ -14,10 +14,12 @@ spec:
     spec:
       containers:
         - name: vue-app
-          image: my-vue-app:latest
-          imagePullPolicy: Never
+          image: ghcr.io/kylemg14-ops/my-vue-app:latest
+          imagePullPolicy: Always  # 建議改成 Always，才能自動拉最新 image
           ports:
             - containerPort: 80
+      imagePullSecrets:
+        - name: ghcr-secret
 ---
 apiVersion: v1
 kind: Service
